@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnonymousChronicles · confessions & secrets</title>
+    <!-- Tailwind via CDN + clean font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', system-ui, sans-serif; }
+        body { background: #f5f3f0; }  /* neutral, warm paper tone */
+        .chronicle-card {
+            transition: all 0.15s ease;
+        }
+        .chronicle-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(80, 70, 70, 0.12);
+        }
+        /* subtle grain texture */
+        .grain-bg {
+            background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="antialiased grain-bg min-h-screen flex flex-col items-center p-5 md:p-6">
+
+<!-- main container – neutral, clean, anonymous feel -->
+<div class="w-full max-w-2xl mx-auto mt-4 md:mt-8">
+
+    <!-- header: anonymouschronicles + tagline -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-light tracking-wide text-stone-700/90 drop-shadow-sm">
+            <span class="font-medium text-stone-800">Anonymous</span>Chronicles
+        </h1>
+        <p class="text-stone-500/70 text-sm uppercase tracking-widest mt-1 font-mono">✧ confessions · little secrets · questions ✧</p>
+    </div>
+
+    <!-- === NEW POST CARD (create anonymous entry) === -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-stone-200/80 p-5 mb-8">
+        <h2 class="text-stone-600 font-medium text-sm flex items-center gap-2 mb-3">
+            <span class="text-xl">📌</span> share what's on your mind
+        </h2>
+        <!-- textarea for anonymous post -->
+        <textarea id="postInput" rows="2" class="w-full p-4 rounded-xl border border-stone-200 bg-stone-50/50 placeholder:text-stone-400 text-stone-700 text-sm focus:ring-2 focus:ring-stone-400 focus:border-transparent outline-none resize-none" placeholder="confess something, whisper a secret, or ask a question..."></textarea>
+
+        <!-- char count & post button -->
+        <div class="flex justify-between items-center mt-3">
+            <span class="text-xs text-stone-400/80 italic" id="charHint"><span id="currentChars">0</span>/200</span>
+            <button id="postBtn" class="bg-stone-600 hover:bg-stone-700 active:scale-95 transition-all text-white font-medium px-6 py-2 rounded-full shadow-md shadow-stone-200 flex items-center gap-1 text-sm">
+                <span>post anonymously</span>
+                <span class="text-base">➤</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- === CHRONICLES FEED (all anonymous posts) === -->
+    <div class="space-y-4">
+        <!-- feed header -->
+        <div class="flex items-center gap-2 text-stone-400/80 text-xs font-medium px-1">
+            <span class="w-2 h-2 bg-stone-400 rounded-full"></span>
+            RECENT CHRONICLES
+            <span class="w-2 h-2 bg-stone-400 rounded-full"></span>
+        </div>
+
+        <!-- dynamic posts container (js will inject new cards here) -->
+        <div id="feedContainer" class="space-y-4">
+
+        </div>
+
+        <!-- subtle end of feed -->
+        <div class="text-center pt-4 text-stone-400/50 text-xs">
+            ⬩ everything is anonymous · nothing is judged ⬩
+        </div>
+    </div>
+</div>
+
+
+
+<!-- footer whisper -->
+<div class="mt-10 text-stone-400 text-xs text-center select-none">
+    <span>🤍 confess · share · ask · anonymous · repeat 🤍</span>
+</div>
+
+
+<script>
+
+    document.getElementById("postBtn").addEventListener('click', () => {
+           let message = document.getElementById("postInput").value;
+
+           fetch(`/api/confession/?message=${message}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+           })
+           .then(response => {
+               if(!response.ok){
+                  throw new Error("error");
+               }
+               return response.json();
+           })
+           .then(data => {
+             console.log(data);
+           })
+           .catch(error => {
+            console.log(error);
+           })
+    })
+
+
+
+    function fetchingPosts(){
+        fetch("/api/confession/")
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                        //console.log(data);
+
+                        // 1. Select the parent container where these cards should go
+                        const mainContainer = document.getElementById("feedContainer");
+
+                        for (let i = data.length - 1; i >= 0; i--) {
+                            // 2. Create the wrapper div
+                            let childContainer = document.createElement("div");
+
+                            // 3. Add all your Tailwind classes
+                            childContainer.className = "chronicle-card bg-white/95 backdrop-blur-sm rounded-2xl p-5 shadow-md border border-stone-200 flex flex-col gap-2";
+
+                            // 4. Insert the internal HTML with the data
+                            // Using data[i].message and a simplified date format
+                            childContainer.innerHTML = `
+                                <p class="text-stone-700 text-base leading-relaxed break-words">
+                                    ${data[i].message}
+                                </p>
+                                <div class="flex items-center justify-between text-xs text-stone-400/70 mt-1">
+                                    <span class="flex items-center gap-1">
+                                        🕯️ anonymous · ${new Date(data[i].createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                    <span class="italic">#confession</span>
+                                </div>
+                            `;
+
+                            // 5. Append to the page
+                            mainContainer.appendChild(childContainer);
+                        }
+
+            })
+            .catch(error => {
+                 console.log(error);
+            })
+    }
+
+    fetchingPosts();
+
+
+</script>
+
+</body>
+</html>
