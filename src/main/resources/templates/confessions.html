@@ -22,6 +22,26 @@
             background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px);
             background-size: 20px 20px;
         }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #44403c;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 999px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="antialiased grain-bg min-h-screen flex flex-col items-center p-5 md:p-6">
@@ -89,6 +109,11 @@
     document.getElementById("postBtn").addEventListener('click', () => {
            let message = document.getElementById("postInput").value;
 
+           if (message.trim() === "") {
+                showToast("Please type in something. The text area is empty.");
+                return;
+            }
+
            fetch(`/api/confession/?message=${message}`, {
                   method: 'POST',
                   headers: {
@@ -99,15 +124,19 @@
                if(!response.ok){
                   throw new Error("error");
                }
+
                return response.json();
            })
            .then(data => {
              console.log(data);
+             document.getElementById("postInput").value = "";
+             fetchingPosts();
            })
            .catch(error => {
             console.log(error);
            })
-    })
+
+    });
 
 
 
@@ -121,6 +150,7 @@
 
                         // 1. Select the parent container where these cards should go
                         const mainContainer = document.getElementById("feedContainer");
+                        mainContainer.innerHTML = '';
 
                         for (let i = data.length - 1; i >= 0; i--) {
                             // 2. Create the wrapper div
@@ -137,7 +167,7 @@
                                 </p>
                                 <div class="flex items-center justify-between text-xs text-stone-400/70 mt-1">
                                     <span class="flex items-center gap-1">
-                                        🕯️ anonymous · ${new Date(data[i].createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        🕯️ anonymous · ${formatLocalTime(data[i].createdAt)}
                                     </span>
                                     <span class="italic">#confession</span>
                                 </div>
@@ -151,7 +181,31 @@
             .catch(error => {
                  console.log(error);
             })
-    }
+        }
+
+        function formatLocalTime(dateString) {
+            const date = new Date(dateString);
+            // Convert to local time string
+            return date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // or true if you prefer 12-hour format
+            });
+        }
+
+
+        function showToast(message) {
+            let toast = document.querySelector('.toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
 
     fetchingPosts();
 
